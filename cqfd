@@ -77,8 +77,8 @@ cfg_parser() {
 	ini=( ${ini[*]/%\\ \)/ \\} ) # the multiline trick
 	ini=( ${ini[*]/%\( \)/\(\) \{} ) # convert text2function (2)
 	ini=( ${ini[*]/%\} \)/\}} ) # remove extra parenthesis
-	ini[0]="" # remove first element
-	ini[${#ini[*]} + 1]='}'    # add the last brace
+	ini[${#ini[*]} + 1]="${ini[0]}" # move the first brace (if any)...
+	ini[0]=""                       # ... to the end
 	if ! eval "$(echo "${ini[*]}")" 2>/dev/null; then # eval the result
 		echo -e "Parsing error:\e[31;1m${ini[*]}\e[0m" 1>&2
 		die "$1: Invalid ini-file!"
@@ -207,11 +207,17 @@ config_load() {
 
 	IFS="$IFS" cfg_parser "$cqfdrc"
 
-	cfg.section.project # load the [project] section
+	# load the [project] section
+	if ! cfg.section.project 2>/dev/null; then
+		die "$cqfdrc: Missing project section!"
+	fi
 	project_org="$org"
 	project_name="$name"
 
-	cfg.section.build # load the [build] section
+	# load the [build] section
+	if ! cfg.section.build 2>/dev/null; then
+		die "$cqfdrc: Missing build section!"
+	fi
 
 	# build parameters may be overriden by a flavor defined in the
 	# build section's 'flavors' parameter.
@@ -224,7 +230,10 @@ config_load() {
 		done
 
 		if [ -n "$_found" ]; then
-			cfg.section."$p_flavor" # load the [$p_flavor] section
+			# load the [$p_flavor] section
+			if ! cfg.section."$p_flavor" 2>/dev/null; then
+				die "$cqfdrc: Missing $p_flavor section!"
+			fi
 		else
 			die "flavor \"$p_flavor\" not found in flavors list"
 		fi
