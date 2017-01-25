@@ -80,6 +80,7 @@ cfg_parser() {
 	ini[0]="" # remove first element
 	ini[${#ini[*]} + 1]='}'    # add the last brace
 	if ! eval "$(echo "${ini[*]}")" 2>/dev/null; then # eval the result
+		echo -e "Parsing error:\e[31;1m${ini[*]}\e[0m" 1>&2
 		die "$1: Invalid ini-file!"
 	fi
 
